@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import SearchBar from '../SearchBar/SearchBar';
 import fetchData from '../../services/movieService';
@@ -17,16 +17,22 @@ export default function App() {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  async function handleSearch(newMovies: string) {
-    setQuery(newMovies);
-    setCurrentPage(1);
-  }
-
   const { data, isError, isLoading } = useQuery({
     queryKey: ['movies', query, currentPage],
     queryFn: () => fetchData(query, currentPage),
     enabled: query !== '',
   });
+
+  useEffect(() => {
+    if (data && data.results.length === 0) {
+      toast.error('No movies found for your request.');
+    }
+  }, [data]);
+
+  async function handleSearch(newMovies: string) {
+    setQuery(newMovies);
+    setCurrentPage(1);
+  }
 
   const totalPages = data?.total_pages ?? 0;
 
