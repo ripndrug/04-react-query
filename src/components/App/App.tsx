@@ -7,20 +7,20 @@ import MovieGrid from '../MovieGrid/MovieGrid';
 import Loader from '../Loader/Loader';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
 import MovieModal from '../MovieModal/MovieModal';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import ReactPaginate from 'react-paginate';
 import css from './App.module.css';
 
 export default function App() {
   const [query, setQuery] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data, isError, isLoading } = useQuery({
+  const { data, isError, isLoading, isSuccess } = useQuery({
     queryKey: ['movies', query, currentPage],
     queryFn: () => fetchData(query, currentPage),
     enabled: query !== '',
+    placeholderData: keepPreviousData,
   });
 
   useEffect(() => {
@@ -38,11 +38,9 @@ export default function App() {
 
   function handleSelectMovie(movie: Movie) {
     setSelectedMovie(movie);
-    setIsModalOpen(true);
   }
 
   function closeModal() {
-    setIsModalOpen(false);
     setSelectedMovie(null);
   }
 
@@ -50,12 +48,11 @@ export default function App() {
     <>
       <SearchBar onSubmit={handleSearch} />
       <Toaster />
-      {isLoading ? (
-        <Loader />
-      ) : (
+      {isLoading && <Loader />}
+      {isSuccess && data.results.length > 0 && (
         <MovieGrid onSelect={handleSelectMovie} movies={data?.results || []} />
       )}
-      {totalPages > 1 && query !== '' && (
+      {totalPages > 1 && query !== '' && isSuccess && (
         <ReactPaginate
           pageCount={totalPages}
           pageRangeDisplayed={5}
@@ -69,7 +66,7 @@ export default function App() {
         />
       )}
       {isError && <ErrorMessage />}
-      {isModalOpen && selectedMovie && (
+      {selectedMovie && (
         <MovieModal onClose={closeModal} movie={selectedMovie} />
       )}
     </>
